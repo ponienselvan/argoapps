@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name:
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - merge:
+        mergeKeys:
+          - server
+        generators:
+          - clusters:
+              selector:
+                matchLabels:
+                  argocd.argoproj.io/secret-type: cluster
+                  type: "multitenant"
+              values:
+                revision: "1.0"
+          - clusters:
+              selector:
+                matchLabels:
+                  argocd.argoproj.io/secret-type: cluster
+                  environ: "dev"
+              values:
+                revision: "1.2"
+    # - clusters:
+    #     selector:
+    #       matchLabels:
+    #         argocd.argoproj.io/secret-type: cluster
+  template:
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/ponienselvan/kubeapp1.git
+        targetRevision: "{{.values.revision}}"
+        path: "guestbook"
+      destination:
+        server: "{{.server}}"
+    metadata:
+      name: "guestbook-{{.name}}"
